@@ -1,0 +1,393 @@
+{
+  "name": "Projeto-Pós",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -480,
+        16
+      ],
+      "id": "147f1946-5c42-4c97-a800-20b12a8b3930",
+      "name": "Telegram Trigger",
+      "webhookId": "cb0f615a-61f9-493a-baa0-73b9887d3f86",
+      "credentials": {
+        "telegramApi": {
+          "id": "8nME3WjRk5dxYlQt",
+          "name": "Telegram - POS-RKT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8c6dee88-0928-4a1e-8081-ff51ea0775ea",
+              "name": "queue",
+              "value": "={{(() => {\n  const text = $json.message?.text || \"\";\n  const parts = text.trim().split(\",\");\n  if (parts.length < 2) return \"\";\n  const cidade = parts[0].trim();\n  const estado = parts[1].trim().toUpperCase();\n  return `${cidade},${estado},BR`;\n})()}}",
+              "type": "string"
+            },
+            {
+              "id": "f195c43b-ae6a-417b-ab05-a15aa78735eb",
+              "name": "=cidadeValida",
+              "value": "={{(() => {   const text = $json.message?.text || \"\";   const parts = text.trim().split(\",\");   if (parts.length < 2) return false;    const cidade = parts[0].trim();   const estado = parts[1].trim().toUpperCase();    return cidade !== \"\" && estado.length === 2; })()}}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -304,
+        16
+      ],
+      "id": "62dd35e4-497b-44f7-a19c-31790435ef15",
+      "name": "FormataCidade"
+    },
+    {
+      "parameters": {
+        "url": "https://api.openweathermap.org/data/2.5/weather",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.queue }}"
+            },
+            {
+              "name": "units",
+              "value": "metric"
+            },
+            {
+              "name": "lang",
+              "value": "pt_br"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        96,
+        -80
+      ],
+      "id": "16341c0a-5da4-4350-867a-9388492b629f",
+      "name": "Get - API OpenWeather",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "LOWqm5E8xtrIyy2o",
+          "name": "Query Auth - OpenWeatherMap"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5f3413ae-176e-413b-845b-d9e6c191b5da",
+              "name": "temperature",
+              "value": "={{ Math.round($json.main.temp) }}",
+              "type": "string"
+            },
+            {
+              "id": "d2bc01dd-1f2e-46f9-8148-a6e74b065dda",
+              "name": "message",
+              "value": "={{(() => {   const city = $json.name;   const temp = Math.round($json.main.temp);   return `🌤️ Clima em ${city}: ${temp}°C`; })()}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        -192
+      ],
+      "id": "c2814bcd-c6bd-4139-b150-8f154a16acba",
+      "name": "Trata Retorno"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.message }} ",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        -80
+      ],
+      "id": "d287bb17-81b1-46bf-ae9b-0282ab061653",
+      "name": "Send a text message",
+      "webhookId": "190e5e2e-7502-4402-90b9-e46f8746a210",
+      "credentials": {
+        "telegramApi": {
+          "id": "8nME3WjRk5dxYlQt",
+          "name": "Telegram - POS-RKT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "dd7d19ce-74c3-4c84-b02f-725411400423",
+              "leftValue": "={{$json.statusCode}}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "aaac873b-98a3-4122-9d18-604211491509",
+              "leftValue": "={{$json.body.main.temp}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "f9098d71-2222-4051-a810-781180cbb5b1",
+              "leftValue": "={{$json.body.name}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        288,
+        -80
+      ],
+      "id": "8f114c70-ed11-4dd6-bc7d-10e478dfdebb",
+      "name": "Valida Retorno"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "97451d39-1890-4f06-b2d1-68865dd2060e",
+              "name": "message",
+              "value": "={{(() => {   if ($json.statusCode === 404) {     return \"❌ Cidade não encontrada. Verifique o nome e tente novamente.\";   }   return \"⚠️ Erro ao consultar a API do clima. Tente novamente mais tarde.\"; })()}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        32
+      ],
+      "id": "832e8283-7456-428b-9855-ec57ef089a34",
+      "name": "Trata Erro"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ffd3fd28-431e-43d9-9557-5b6e38da8f78",
+              "leftValue": "={{ $json.cidadeValida }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -144,
+        16
+      ],
+      "id": "485a9815-1715-421b-b059-cdfba6032128",
+      "name": "Valida Cidade"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "❌ Cidade não encontrada. Use o formato Cidade,UF (ex.: São Paulo,SP).",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        96,
+        128
+      ],
+      "id": "a0509a3f-0a44-4031-9bac-ffba2f41bf29",
+      "name": "Send a text message1",
+      "webhookId": "190e5e2e-7502-4402-90b9-e46f8746a210",
+      "credentials": {
+        "telegramApi": {
+          "id": "8nME3WjRk5dxYlQt",
+          "name": "Telegram - POS-RKT"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "FormataCidade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormataCidade": {
+      "main": [
+        [
+          {
+            "node": "Valida Cidade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get - API OpenWeather": {
+      "main": [
+        [
+          {
+            "node": "Valida Retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trata Retorno": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valida Retorno": {
+      "main": [
+        [
+          {
+            "node": "Trata Retorno",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trata Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trata Erro": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valida Cidade": {
+      "main": [
+        [
+          {
+            "node": "Get - API OpenWeather",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "1f3eee38-365a-4c0d-a61b-8bf3bdc94b2d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "81c27145b0b1c09163f68392ef4c397f3695795b52cc65e4832f8ceb49749632"
+  },
+  "id": "16GNc64bAfQJ3XNFDqbB1",
+  "tags": []
+}
