@@ -23,6 +23,31 @@ Este projeto implementa um chatbot no Telegram utilizando **n8n** que consulta a
 
 ---
 
+
+# 🧠 Explicação do Workflow
+
+O workflow segue a seguinte estrutura:
+
+Telegram Trigger
+
+↓
+
+FormataCidade
+
+↓
+
+Get - API OpenWeather
+
+↓
+
+Valida Retorno (IF)
+
+↓ TRUE  → Trata Retorno → Envia mensagem
+
+↓ FALSE → Trata Erro → Envia mensagem
+
+---
+
 # 🚀 Como importar o workflow no n8n
 
 1. Acesse seu painel do n8n
